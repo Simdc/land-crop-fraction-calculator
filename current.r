@@ -5,9 +5,16 @@ library(magrittr)
 library(terra)
 library(geodata)
 library(readxl)
+library(dplyr)
+library(purrr)
 
 # Read the land use and Germany's federal states data
 landuse <- readRDS("landuse.rds")
+
+landuse
+
+outpath <- "C:/Users/s9dhc/OneDrive/Documents/PIK/NUTS/GER_NUTS1"
+
 ger <- gadm("DEU", ".", level = 1)
 
 # Read the land use fractions for Germany
@@ -27,10 +34,15 @@ subset <- list(
 
 
 # Calculate the area of each grid cell (in square kilometers)
-cell_area <- cellSize(landuse)
+#cell_area <- cellSize(landuse)
+# Read the cell area data
+terr_area <- read_io(filename = paste0(
+  outpath, "/terr_area.bin.json"
+)) %>% as_terra()
+
 
 # Calculate the cropland area for each grid cell
-cropland_area <- landuse * cell_area
+cropland_area <- landuse * terr_area
 
 # Mask the cropland area raster to the boundaries of Germany's federal states
 masked_cropland_area <- mask(cropland_area, ger)
@@ -156,9 +168,61 @@ merged_data
 
 # Filter rows where land_percentage is 10% or more
 filtered_percentage_data <- merged_data %>%
-  filter(land_percentage >= 10)
+  filter(land_percentage >= 0.8)
 
 # View the filtered dataframe
 filtered_percentage_data
+
+land_percentage_list <- filtered_percentage_data$land_percentage
+
+land_percentage_list
+
+library(dplyr)
+library(purrr)
+
+# Convert land_percentage_list to a numeric vector
+land_percentage_vector <- as.numeric(land_percentage_list)
+
+# Define the number of points and the target sum range
+num_points <- 10
+min_sum <- 9
+max_sum <- 11
+
+# Generate all possible combinations of 10 points
+combinations <- combn(land_percentage_vector, num_points, simplify = FALSE)
+
+# Calculate the sum of each combination and filter based on the sum range
+combination_sums <- map_dbl(combinations, sum)  # Sum of each combination
+
+# Create a data frame with sums and their corresponding combinations
+combination_df <- tibble(
+  combination = combinations,
+  sum = combination_sums
+)
+
+# Filter combinations to find those with a sum between min_sum and max_sum
+valid_combinations <- combination_df %>%
+  filter(sum >= min_sum, sum <= max_sum)
+
+# Check if there are any valid combinations
+if (nrow(valid_combinations) > 0) {
+  # Find the combination closest to the target range
+  closest_combination <- valid_combinations %>%
+    arrange(abs(sum - ((min_sum + max_sum) / 2))) %>%
+    slice(1) %>%
+    pull(combination)
+  
+  # Convert the list to a numeric vector
+  closest_combination_vector <- unlist(closest_combination)
+  
+  # Print the closest combination and its sum
+  print(closest_combination_vector)
+  print(sum(closest_combination_vector))
+} else {
+  print("No valid combinations found.")
+}
+
+
+
 
 
