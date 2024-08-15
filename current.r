@@ -9,6 +9,22 @@ library(geodata)
 landuse <- readRDS("landuse.rds")
 ger <- gadm("DEU", ".", level = 1)
 
+# Read the land use fractions for Germany
+crops <- c(
+  "tece", "rice", "maize", "trce", "pulses", "tero", "trro",
+  "oil crops sunflower", "oil crops soybean", "oil crops groundnut",
+  "oil crops rapeseed", "sugar cane", "other crops", "managed grass",
+  "bio-energy grass", "bio-energy tree"
+)
+
+irrig <- c("rf", "sf", "sp", "dr")
+
+subset <- list(
+  band = paste(crops[c(1:13)], rep(irrig, each = 13), sep = "_"),
+  year = "2000"
+)
+
+
 # Calculate the area of each grid cell (in square kilometers)
 cell_area <- cellSize(landuse)
 
