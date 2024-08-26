@@ -74,7 +74,7 @@ landuse_fraction_df <- cropland_state_df %>%
 # Write the final tibble to a file (CSV format)
 #write_csv(landuse_fraction_df, "germany_cropland_fractions.csv")
 
-landuse_fraction_df
+
 
 file_path <- "C:/Users/s9dhc/OneDrive/Documents/PIK/NUTS/GER_NUTS1/data.csv"
 first_sheet_data <- read_csv(file_path)
@@ -115,14 +115,14 @@ filtered_data <- filtered_data %>%
 
 
 
-colnames(landuse_fraction_df)
+
 
 # Rename columns for clarity
 filtered_data <- filtered_data %>%
   rename(state_name = State, land_used_ha = `land used in ha`)
 
 
-filtered_data
+
 
 # Merge filtered_data with landuse_fraction_df based on state names
 merged_data <- filtered_data %>%
@@ -155,8 +155,7 @@ merged_data <- merged_data %>%
 # Calculate the sum of the 'land_used_ha' column
 total_land_used_ha <- sum(filtered_data$land_used_ha, na.rm = TRUE)
 
-# Print the result
-total_land_used_ha
+
 
 
 merged_data <- merged_data %>%
@@ -164,65 +163,45 @@ merged_data <- merged_data %>%
 
 
 # View the updated dataframe
-merged_data
+df = merged_data
 
-# Filter rows where land_percentage is 10% or more
-filtered_percentage_data <- merged_data %>%
-  filter(land_percentage >= 0.8)
-
-# View the filtered dataframe
-filtered_percentage_data
-
-land_percentage_list <- filtered_percentage_data$land_percentage
-
-land_percentage_list
-
+# Load required libraries
 library(dplyr)
-library(purrr)
 
-# Convert land_percentage_list to a numeric vector
-land_percentage_vector <- as.numeric(land_percentage_list)
+# Assuming you have a tibble named 'df'
+# df <- tibble(year = ..., x = ..., y = ..., state_name = ..., land_used_ha = ..., cropland_fraction = ..., cropland_area_ha = ..., land_percentage = ...)
 
-# Define the number of points and the target sum range
-num_points <- 10
-min_sum <- 9
-max_sum <- 11
+# 1. Select a value of land_percentage and the corresponding row_number
+df <- df %>%
+  mutate(row_number = row_number())  # Add a column with row numbers
 
-# Generate all possible combinations of 10 points
-combinations <- combn(land_percentage_vector, num_points, simplify = FALSE)
-
-# Calculate the sum of each combination and filter based on the sum range
-combination_sums <- map_dbl(combinations, sum)  # Sum of each combination
-
-# Create a data frame with sums and their corresponding combinations
-combination_df <- tibble(
-  combination = combinations,
-  sum = combination_sums
-)
-
-# Filter combinations to find those with a sum between min_sum and max_sum
-valid_combinations <- combination_df %>%
-  filter(sum >= min_sum, sum <= max_sum)
-
-# Check if there are any valid combinations
-if (nrow(valid_combinations) > 0) {
-  # Find the combination closest to the target range
-  closest_combination <- valid_combinations %>%
-    arrange(abs(sum - ((min_sum + max_sum) / 2))) %>%
-    slice(1) %>%
-    pull(combination)
+# 2. Function to create a 'zehn_group' such that the total sum of land_percentage is 10
+create_zehn_group <- function(data) {
+  # Sample rows until their sum of land_percentage equals or exceeds 10
+  sampled_rows <- data %>%
+    sample_n(size = nrow(data), replace = FALSE) %>%
+    mutate(cumulative_sum = cumsum(land_percentage)) %>%
+    filter(cumulative_sum <= 10) %>%
+    bind_rows(
+      data %>%
+        filter(row_number == min(data$row_number[data$cumulative_sum > 10]))
+    )
   
-  # Convert the list to a numeric vector
-  closest_combination_vector <- unlist(closest_combination)
+  # Ensure that the cumulative sum is as close to 10 as possible
+  final_group <- sampled_rows %>%
+    filter(cumulative_sum <= 10) %>%
+    slice(1:max(which(sampled_rows$cumulative_sum <= 10)))
   
-  # Print the closest combination and its sum
-  print(closest_combination_vector)
-  print(sum(closest_combination_vector))
-} else {
-  print("No valid combinations found.")
+  return(final_group)
 }
 
+# 3. Find 10 such 'zehn_groups'
+zehn_groups <- replicate(10, create_zehn_group(df), simplify = FALSE)
+
+# Display the 10 'zehn_groups'
+zehn_groups
+
+# Each element of 'zehn_groups' is a tibble containing the row numbers and land_percentage values for that group
 
 
-
-
+#merged_data %>% sample_n(10)
