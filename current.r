@@ -7,6 +7,7 @@ library(geodata)
 library(readxl)
 library(dplyr)
 library(purrr)
+options(warn=-1)
 
 # Read the land use and Germany's federal states data
 landuse <- readRDS("landuse.rds")
@@ -181,16 +182,16 @@ create_zehn_group <- function(data) {
   sampled_rows <- data %>%
     sample_n(size = nrow(data), replace = FALSE) %>%
     mutate(cumulative_sum = cumsum(land_percentage)) %>%
-    filter(cumulative_sum <= 10) %>%
+    filter(cumulative_sum <= 11) %>%
     bind_rows(
       data %>%
-        filter(row_number == min(data$row_number[data$cumulative_sum > 10]))
+        filter(row_number == min(data$row_number[data$cumulative_sum > 11]))
     )
   
   # Ensure that the cumulative sum is as close to 10 as possible
   final_group <- sampled_rows %>%
-    filter(cumulative_sum <= 10) %>%
-    slice(1:max(which(sampled_rows$cumulative_sum <= 10)))
+    filter(cumulative_sum <= 10+ .8) %>%
+    #slice(1:max(which(sampled_rows$cumulative_sum <= 10)))
   
   return(final_group)
 }
@@ -205,3 +206,35 @@ zehn_groups
 
 
 #merged_data %>% sample_n(10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
